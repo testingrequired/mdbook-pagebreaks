@@ -1,0 +1,14 @@
+.mdbook_pagebreak {
+    page-break-before:always;
+    display: none;
+}
+
+@media print {
+    .mdbook_pagebreak {
+        display: block;
+    }
+}
+
+html {
+    color: red;
+}

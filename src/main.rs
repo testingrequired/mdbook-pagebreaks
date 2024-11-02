@@ -4,7 +4,8 @@ use mdbook::book::Book;
 use mdbook::errors::Error;
 use mdbook::preprocess::{CmdPreprocessor, Preprocessor, PreprocessorContext};
 use semver::{Version, VersionReq};
-use std::io;
+use std::fs::File;
+use std::io::{stdin, stdout, Write};
 use std::process;
 
 mod replacer;
@@ -12,6 +13,7 @@ mod replacer;
 pub fn make_app() -> Command {
     Command::new("linebreaks-preprocessor")
         .about("A mdbook preprocessor which inserts page breaks")
+        .subcommand(Command::new("init").about("Generate CSS file needed"))
         .subcommand(
             Command::new("supports")
                 .arg(Arg::new("renderer").required(true))
@@ -26,14 +28,28 @@ fn main() {
 
     if let Some(sub_args) = matches.subcommand_matches("supports") {
         handle_supports(&preprocessor, sub_args);
+    } else if let Some(_) = matches.subcommand_matches("init") {
+        handle_init(&preprocessor);
     } else if let Err(e) = handle_preprocessing(&preprocessor) {
         eprintln!("{e}");
         process::exit(1);
     }
 }
 
+fn handle_init(_pre: &dyn Preprocessor) -> ! {
+    let template_css_content = include_str!("pagebreaks.css");
+
+    let current_dir = std::env::current_dir().unwrap();
+    let generated_css_file_path = current_dir.join("mdbook-pagebreaks.css");
+
+    let mut generated_css_file = File::create(&generated_css_file_path).unwrap();
+    let _ = writeln!(generated_css_file, "{template_css_content}");
+
+    process::exit(0);
+}
+
 fn handle_preprocessing(pre: &dyn Preprocessor) -> Result<(), Error> {
-    let (ctx, book) = CmdPreprocessor::parse_input(io::stdin())?;
+    let (ctx, book) = CmdPreprocessor::parse_input(stdin())?;
 
     let book_version = Version::parse(&ctx.mdbook_version)?;
     let version_req = VersionReq::parse(mdbook::MDBOOK_VERSION)?;
@@ -49,7 +65,7 @@ fn handle_preprocessing(pre: &dyn Preprocessor) -> Result<(), Error> {
     }
 
     let processed_book = pre.run(&ctx, book)?;
-    serde_json::to_writer(io::stdout(), &processed_book)?;
+    serde_json::to_writer(stdout(), &processed_book)?;
 
     Ok(())
 }
@@ -110,6 +126,52 @@ mod linebreaks_lib {
     mod test {
         use super::*;
         use pretty_assertions::assert_eq;
+
+        #[test]
+        fn linebreaks_preprocessor_rudfasdn() {
+            let input_json = r##"[
+                {
+                    "root": "/path/to/book",
+                    "config": {
+                        "book": {
+                            "authors": ["AUTHOR"],
+                            "language": "en",
+                            "multilingual": false,
+                            "src": "src",
+                            "title": "TITLE"
+                        },
+                        "preprocessor": {
+                            "linebreaks": {}
+                        }
+                    },
+                    "renderer": "html",
+                    "mdbook_version": "0.4.21"
+                },
+                {
+                    "sections": [
+                        {
+                            "Chapter": {
+                                "name": "Chapter 1",
+                                "content": "# Chapter 1\n{{---}}",
+                                "number": [1],
+                                "sub_items": [],
+                                "path": "chapter_1.md",
+                                "source_path": "chapter_1.md",
+                                "parent_names": []
+                            }
+                        }
+                    ],
+                    "__non_exhaustive": null
+                }
+            ]"##;
+            let input_json = input_json.as_bytes();
+            let (input_ctx, input_book) =
+                mdbook::preprocess::CmdPreprocessor::parse_input(input_json).unwrap();
+
+            let _result = LineBreaks::new().run(&input_ctx, input_book);
+
+            println!("");
+        }
 
         #[test]
         fn linebreaks_preprocessor_run() {
