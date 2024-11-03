@@ -2,6 +2,8 @@
 
 A mdbook preprocessor that replaces `{{---}}` with explicit print page breaks in HTML.
 
+https://crates.io/crates/mdbook-pagebreaks
+
 ## Example
 
 The sections `Title`, `Section 1`, `Section 2`, and `Section 3` will all be printed on seperate pages.
@@ -33,7 +35,7 @@ Quisque nec dapibus nisi. Aliquam vehicula consequat libero eu dapibus. Curabitu
 ## Install
 
 ```shell
-cargo install mdbook-pagebreaks --version 0.3.0
+cargo install mdbook-pagebreaks --version 0.3.1
 ```
 
 ## Initialize

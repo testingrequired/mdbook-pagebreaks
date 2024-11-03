@@ -1,9 +1,18 @@
 [package]
 name = "mdbook-pagebreaks"
-description = "A mdbook preprocessor to insert page breaks"
-version = "0.3.0"
+description = "A mdbook preprocessor to insert page breaks when rendering to HTML"
+version = "0.3.1"
 edition = "2021"
 license = "MIT"
+readme = "README.md"
+repository = "https://github.com/testingrequired/mdbook-pagebreaks"
+categories = [
+    "command-line-utilities",
+    "text-processing",
+    "parser-implementations",
+]
+keywords = ["mdbook", "html"]
+authors = ["Kylee Tilley <kyleetilley@gmail.com>"]
 
 [dependencies]
 anyhow = "1.0.91"
