@@ -88,7 +88,7 @@ fn handle_supports(pre: &dyn Preprocessor, sub_args: &ArgMatches) -> ! {
 
 mod linebreaks_lib {
     use mdbook::BookItem;
-    use replacer::replace_page_breaks;
+    use replacer::{remove_page_breaks, replace_html_page_breaks};
 
     use super::*;
 
@@ -107,18 +107,21 @@ mod linebreaks_lib {
 
         fn run(&self, ctx: &PreprocessorContext, mut book: Book) -> Result<Book, Error> {
             if let Some(_cfg) = ctx.config.get_preprocessor(self.name()) {}
-
             book.for_each_mut(|item| {
                 if let BookItem::Chapter(chapter) = item {
-                    chapter.content = replace_page_breaks(&chapter.content);
+                    chapter.content = if ctx.renderer == "html" {
+                        replace_html_page_breaks(&chapter.content)
+                    } else {
+                        remove_page_breaks(&chapter.content)
+                    };
                 }
             });
 
             Ok(book)
         }
 
-        fn supports_renderer(&self, renderer: &str) -> bool {
-            renderer == "html"
+        fn supports_renderer(&self, _renderer: &str) -> bool {
+            true
         }
     }
 
@@ -128,53 +131,7 @@ mod linebreaks_lib {
         use pretty_assertions::assert_eq;
 
         #[test]
-        fn linebreaks_preprocessor_rudfasdn() {
-            let input_json = r##"[
-                {
-                    "root": "/path/to/book",
-                    "config": {
-                        "book": {
-                            "authors": ["AUTHOR"],
-                            "language": "en",
-                            "multilingual": false,
-                            "src": "src",
-                            "title": "TITLE"
-                        },
-                        "preprocessor": {
-                            "linebreaks": {}
-                        }
-                    },
-                    "renderer": "html",
-                    "mdbook_version": "0.4.21"
-                },
-                {
-                    "sections": [
-                        {
-                            "Chapter": {
-                                "name": "Chapter 1",
-                                "content": "# Chapter 1\n{{---}}",
-                                "number": [1],
-                                "sub_items": [],
-                                "path": "chapter_1.md",
-                                "source_path": "chapter_1.md",
-                                "parent_names": []
-                            }
-                        }
-                    ],
-                    "__non_exhaustive": null
-                }
-            ]"##;
-            let input_json = input_json.as_bytes();
-            let (input_ctx, input_book) =
-                mdbook::preprocess::CmdPreprocessor::parse_input(input_json).unwrap();
-
-            let _result = LineBreaks::new().run(&input_ctx, input_book);
-
-            println!("");
-        }
-
-        #[test]
-        fn linebreaks_preprocessor_run() {
+        fn linebreaks_preprocessor_run_html() {
             let input_json = r##"[
                 {
                     "root": "/path/to/book",
@@ -238,6 +195,93 @@ mod linebreaks_lib {
                             "Chapter": {
                                 "name": "Chapter 1",
                                 "content": "# Chapter 1\n<div class=\"mdbook_pagebreak\">&nbsp;</div>",
+                                "number": [1],
+                                "sub_items": [],
+                                "path": "chapter_1.md",
+                                "source_path": "chapter_1.md",
+                                "parent_names": []
+                            }
+                        }
+                    ],
+                    "__non_exhaustive": null
+                }
+            ]"##;
+            let expected_json = expected_json.as_bytes();
+            let (_, expected_book) =
+                mdbook::preprocess::CmdPreprocessor::parse_input(expected_json).unwrap();
+
+            let result = LineBreaks::new().run(&input_ctx, input_book);
+            assert!(result.is_ok());
+
+            let actual_book = result.unwrap();
+            assert_eq!(expected_book, actual_book);
+        }
+
+        #[test]
+        fn linebreaks_preprocessor_run_other() {
+            let input_json = r##"[
+                {
+                    "root": "/path/to/book",
+                    "config": {
+                        "book": {
+                            "authors": ["AUTHOR"],
+                            "language": "en",
+                            "multilingual": false,
+                            "src": "src",
+                            "title": "TITLE"
+                        },
+                        "preprocessor": {
+                            "linebreaks": {}
+                        }
+                    },
+                    "renderer": "other",
+                    "mdbook_version": "0.4.21"
+                },
+                {
+                    "sections": [
+                        {
+                            "Chapter": {
+                                "name": "Chapter 1",
+                                "content": "# Chapter 1\n{{---}}",
+                                "number": [1],
+                                "sub_items": [],
+                                "path": "chapter_1.md",
+                                "source_path": "chapter_1.md",
+                                "parent_names": []
+                            }
+                        }
+                    ],
+                    "__non_exhaustive": null
+                }
+            ]"##;
+            let input_json = input_json.as_bytes();
+            let (input_ctx, input_book) =
+                mdbook::preprocess::CmdPreprocessor::parse_input(input_json).unwrap();
+
+            let expected_json = r##"[
+                {
+                    "root": "/path/to/book",
+                    "config": {
+                        "book": {
+                            "authors": ["AUTHOR"],
+                            "language": "en",
+                            "multilingual": false,
+                            "src": "src",
+                            "title": "TITLE"
+                        },
+                        "preprocessor": {
+                            "linebreaks": {}
+                        }
+                    },
+                    "renderer": "other",
+                    "mdbook_version": "0.4.21"
+                },
+                {
+                    "sections": [
+                        {
+                            "Chapter": {
+                                "name": "Chapter 1",
+                                "content": "# Chapter 1\n",
                                 "number": [1],
                                 "sub_items": [],
                                 "path": "chapter_1.md",

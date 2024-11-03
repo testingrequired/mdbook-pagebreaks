@@ -33,7 +33,7 @@ Quisque nec dapibus nisi. Aliquam vehicula consequat libero eu dapibus. Curabitu
 ## Install
 
 ```shell
-cargo install mdbook-pagebreaks
+cargo install mdbook-pagebreaks --version 0.3.0
 ```
 
 ## Initialize
